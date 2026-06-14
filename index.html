@@ -2,10 +2,249 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>测试页面</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>真相快报</title>
+    <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6fa;color:#1a1a1a}
+.wrap{max-width:420px;margin:auto;padding:20px}
+.card{background:#fff;border-radius:16px;padding:24px 20px;box-shadow:0 6px 20px rgba(0,0,0,.08);margin-bottom:18px;text-align:center}
+.news-img{width:100%;border-radius:12px;margin:12px 0;background:#eee}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;cursor:pointer;margin-top:14px}
+.btn-blue{background:#2563eb;color:#fff}
+.btn-red{background:#dc2626;color:#fff}
+.btn-green{background:#16a34a;color:#fff}
+.comment{display:flex;gap:8px;margin:8px 0;justify-content:flex-start}
+.c-av{width:28px;height:28px;border-radius:50%;background:#ddd;flex-shrink:0}
+.c-b{background:#f0f0f0;padding:8px 10px;border-radius:10px;font-size:14px}
+.bar-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.bar{height:10px;flex:1;background:#eee;border-radius:5px;overflow:hidden}
+.bar-i{height:100%;background:#2563eb}
+.hidden{display:none!important}
+</style>
 </head>
 <body>
-    <h1>你好，我成功了！</h1>
-    这是我的第一个 GitHub Pages 网页。
+
+<div class="wrap">
+
+<!-- 封面 -->
+<div id="cover" class="card">
+  <h2>真相快报</h2>
+  <p style="margin:12px 0">实习编辑，你好<br>欢迎加入《真相快报》</p>
+  <p>请判断投稿是否为虚假新闻<br>你的表现关系到是否转正</p>
+  <button class="btn btn-blue" onclick="startGame()">开始审核</button>
+</div>
+
+<!-- 判断页 -->
+<div id="judge" class="card hidden">
+  <p id="step"></p>
+  <h3 id="qtitle"></h3>
+  <img id="qimg" class="news-img" src="" alt="新闻图片">
+  <p id="qtxt"></p>
+  <button class="btn btn-red" onclick="judge(true)">是假新闻</button>
+  <button class="btn btn-green" onclick="judge(false)">不是假新闻</button>
+</div>
+
+<!-- 反馈页 -->
+<div id="feedback" class="card hidden">
+  <h3 id="resTxt"></h3>
+
+  <div class="bar-row"><span>假新闻</span><div class="bar"><div class="bar-i" id="bfake"></div></div><span id="pfake"></span></div>
+  <div class="bar-row"><span>不是假新闻</span><div class="bar"><div class="bar-i" id="breal"></div></div><span id="preal"></span></div>
+
+  <p style="margin-top:10px;text-align:left"><b>编辑部评论</b></p>
+  <div id="cmt"></div>
+
+  <p style="margin-top:10px;text-align:left"><b>真相还原</b></p>
+  <img id="timg" class="news-img" src="" alt="辟谣图片">
+  <p id="ttxt" style="font-size:14px;color:#444;text-align:left"></p>
+
+  <button class="btn btn-blue" onclick="nextQ()">下一题</button>
+</div>
+
+<!-- 结果页 -->
+<div id="result" class="card hidden">
+  <h2 id="rTitle"></h2>
+  <p id="rDesc" style="margin:12px 0;white-space:pre-line"></p>
+  <button class="btn btn-blue" onclick="restart()">重新体验</button>
+  <button class="btn btn-green" onclick="alert('假新闻：以不实事实验证的新闻。\n常见类型：编造事实、断章取义、移花接木、标题党、深度伪造。')">假新闻相关知识</button>
+  <button class="btn btn-red" onclick="location.href='https://www.piyao.org.cn/'">更多虚假信息案例</button>
+</div>
+
+</div>
+
+<script>
+var questions = [
+  {
+    title: "【沸点视频】猫猫队立大功！被收养流浪猫协助警方破案获奖",
+    content: "广东佛山一只名为“妙妙”的流浪猫获得警方颁发的“一等勇猛功”奖状，称其吓退歹徒并协助破案。",
+    fake: true,
+    percentFake: 82,
+    comments: ["时间上不对吧","地点搞错了","配图一看就是P的"],
+    truth: "佛山警方通报：该事件并未发生，属虚假信息。"
+  },
+  {
+    title: "【中国新闻周刊】对话“流调中最辛苦的人”：来北京找儿子，凌晨打零工补贴家用",
+    content: "北京朝阳区无症状感染者岳某称，自己来京是为了寻找失踪多年的儿子。",
+    fake: false,
+    percentFake: 31,
+    comments: ["看得很难受","希望孩子平安","官方后来有通报"],
+    truth: "威海警方通报：其子遗体已于2020年找到，DNA比对确认，系意外溺亡。"
+  },
+  {
+    title: "【Ukraine 24广播】泽连斯基宣布投降并呼吁放下武器",
+    content: "网传2022年乌克兰总统泽连斯基在公开讲话中宣布投降。",
+    fake: true,
+    percentFake: 88,
+    comments: ["断章取义","视频是剪辑的","外网早辟谣"],
+    truth: "该视频为恶意剪辑，泽连斯基原话语境完全不同。"
+  },
+  {
+    title: "【DNI】奥巴马政府阴谋颠覆特朗普胜选",
+    content: "网传美国国家情报总监办公室（DNI）发布新闻稿，称奥巴马政府试图伪造情报推翻特朗普2016年胜选结果。",
+    fake: true,
+    percentFake: 91,
+    comments: ["官网根本没有这篇稿","典型的伪造截图","一眼政治谣言"],
+    truth: "ODNI官网无此新闻稿，为伪造的政府文件截图。"
+  },
+  {
+    title: "【福建日报】冷冻馒头超过两天会长黄曲霉素",
+    content: "网传冷冻馒头在冰箱存放超过48小时会产生黄曲霉素，食用可致癌。",
+    fake: true,
+    percentFake: 76,
+    comments: ["我家冰箱常备馒头啊","专家早就辟谣了","这标题党太典型了"],
+    truth: "黄曲霉素在低温条件下难以繁殖，短期冷冻不会产生致癌物质。"
+  },
+  {
+    title: "【太原零点科技】肯德基使用6翅8腿转基因怪鸡",
+    content: "网传肯德基使用转基因技术培育六翅八腿“怪鸡”制作产品。",
+    fake: true,
+    percentFake: 89,
+    comments: ["这图P得太假了","小时候就被骗过","官方早就起诉过了"],
+    truth: "六翅鸡为恶意PS图片，肯德基多次公开辟谣并追究法律责任。"
+  },
+  {
+    title: "【社媒】四川德阳液化气罐车爆炸",
+    content: "网传四川省德阳市一辆液化气罐车行驶中突然爆炸，死伤惨重。",
+    fake: true,
+    percentFake: 93,
+    comments: ["又是旧视频新地点","官方没通报基本是假","移花接木"],
+    truth: "该视频为往年其他事故画面，与德阳无关。"
+  },
+  {
+    title: "【推特】三峡大坝决堤，数千家庭撤离",
+    content: "网传三峡大坝发生结构性溃坝，下游居民紧急撤离。",
+    fake: true,
+    percentFake: 96,
+    comments: ["卫星图都没事","官方实时监测正常","年年都传"],
+    truth: "三峡集团及水利部多次澄清：大坝运行正常，网传视频为谣言。"
+  },
+  {
+    title: "【澎湃新闻】男子冒充“中国科学院院士”阮少平讲学",
+    content: "网传一男子自称“中国科学院院士阮少平”，在多所中小学开展讲座。",
+    fake: false,
+    percentFake: 42,
+    comments: ["查过确实是真的","中科院官网可查","学校把关不严"],
+    truth: "确有此人，曾以“中科院院士”名义活动，后经媒体核实身份属实。"
+  },
+  {
+    title: "【自媒体】上海老伯捡包勒索5万元",
+    content: "网传上海一位老伯捡到名包后，向失主索要5万元“酬金”。",
+    fake: true,
+    percentFake: 67,
+    comments: ["金额被夸大了","后续有反转","别急着骂老人"],
+    truth: "事件存在，但具体情节与金额被网络传播夸大，属失实信息。"
+  },
+  {
+    title: "【网络】四川峨眉山人猴大战，猴王被击毙",
+    content: "网传峨眉山景区爆发大规模人猴冲突，猴王被游客打死。",
+    fake: true,
+    percentFake: 84,
+    comments: ["年年都在传","图是旧图","景区已辟谣"],
+    truth: "峨眉山景区管理处多次澄清：未发生所谓“人猴大战”，网传图片为旧图炒作。"
+  }
+];
+
+var idx = 0;
+var score = 0;
+
+function $(id){ return document.getElementById(id); }
+
+function startGame(){
+  $("cover").className = "card hidden";
+  $("judge").className = "card";
+  loadQuestion();
+}
+
+function loadQuestion(){
+  var q = questions[idx];
+  $("step").innerText = "第 " + (idx+1) + " 题 / 共 " + questions.length + " 题　正确：" + score;
+  $("qtitle").innerText = q.title;
+  $("qtxt").innerText = q.content;
+  $("qimg").src = "images/" + String(idx+1).padStart(2,"0") + "news.png";
+}
+
+function judge(userSaysFake){
+  var q = questions[idx];
+  if(userSaysFake === q.fake) score++;
+
+  $("resTxt").innerHTML = (userSaysFake === q.fake)
+    ? "✅ 判断正确"
+    : "❌ 判断错误（正确答案：" + (q.fake ? "假新闻" : "不是假新闻") + "）";
+
+  $("bfake").style.width = q.percentFake + "%";
+  $("breal").style.width = (100 - q.percentFake) + "%";
+  $("pfake").innerText = q.percentFake + "%";
+  $("preal").innerText = (100 - q.percentFake) + "%";
+
+  var cmtHtml = "";
+  for(var i=0;i<q.comments.length;i++){
+    cmtHtml += '<div class="comment"><div class="c-av"></div><div class="c-b">'+q.comments[i]+'</div></div>';
+  }
+  $("cmt").innerHTML = cmtHtml;
+
+  var key = String(idx+1).padStart(2,"0");
+  $("timg").src = "images/" + key + "truth.png";
+  $("ttxt").innerText = q.truth;
+
+  $("judge").className = "card hidden";
+  $("feedback").className = "card";
+}
+
+function nextQ(){
+  idx++;
+  if(idx >= questions.length){
+    showResult();
+    return;
+  }
+  $("feedback").className = "card hidden";
+  $("judge").className = "card";
+  loadQuestion();
+}
+
+function showResult(){
+  var rate = score / questions.length;
+  if(rate >= 0.8){
+    $("rTitle").innerText = "🎉 恭喜！你已转正";
+    $("rDesc").innerText = "答对 " + score + "/" + questions.length + " 题\n具备优秀的新闻甄别能力！";
+  } else if(rate >= 0.5){
+    $("rTitle").innerText = "📝 需再考核";
+    $("rDesc").innerText = "答对 " + score + "/" + questions.length + " 题\n建议加强媒介素养训练";
+  } else {
+    $("rTitle").innerText = "😅 很遗憾";
+    $("rDesc").innerText = "仅答对 " + score + "/" + questions.length + " 题\n请认真学习假新闻相关知识";
+  }
+  $("feedback").className = "card hidden";
+  $("result").className = "card";
+}
+
+function restart(){
+  idx = 0;
+  score = 0;
+  $("result").className = "card hidden";
+  $("judge").className = "card";
+  loadQuestion();
+}
+</script>
 </body>
 </html>
